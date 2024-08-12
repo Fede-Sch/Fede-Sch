@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TA-TE-TI Primaveral</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #FFD1DC; /* Rosa claro */
+            color: #FF69B4; /* Rosa fuerte */
+        }
+        #game-container {
+            text-align: center;
+            background-color: #FFFFFF;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 10px;
+            margin-top: 20px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #98FB98; /* Verde menta */
+            border: 3px solid #FF69B4; /* Rosa fuerte */
+            border-radius: 15px;
+            font-size: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .cell:hover {
+            background-color: #FFFF99; /* Amarillo pastel */
+        }
+        #message {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        #reset-btn {
+            background-color: #FF69B4; /* Rosa fuerte */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #reset-btn:hover {
+            background-color: #FF1493; /* Rosa más intenso */
+        }
+        @keyframes winner-animation {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes draw-animation {
+            0% { transform: translateY(0); }
+            25% { transform: translateY(-10px); }
+            75% { transform: translateY(10px); }
+            100% { transform: translateY(0); }
+        }
+        .winner-cell {
+            animation: winner-animation 0.5s ease infinite;
+            background-color: #FFFF99; /* Amarillo pastel */
+        }
+        .draw-cell {
+            animation: draw-animation 0.5s ease infinite;
+            background-color: #87CEFA; /* Celeste */
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>¡TA-TE-TI Primaveral!</h1>
+        <div id="board"></div>
+        <p id="message"></p>
+        <button id="reset-btn">¡Otra ronda!</button>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const message = document.getElementById('message');
+        const resetBtn = document.getElementById('reset-btn');
+        let currentPlayer = '😎';
+        let gameBoard = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+        let selectedPiece = null;
+
+        const winMessages = [
+            "¡WOW, eres increíble!",
+            "¡Súper cool! 😎",
+            "¡Eres todo un pro!",
+            "¡Eso fue épico!",
+            "¡Arrasaste totalmente!"
+        ];
+
+        const drawMessages = [
+            "¡Empate épico!",
+            "¡Están muy parejos!",
+            "¡Casi, pero no!",
+            "¡Vaya duelo de titanes!",
+            "¡Nadie se rinde aquí!"
+        ];
+
+        function createBoard() {
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('click', handleCellClick);
+                board.appendChild(cell);
+            }
+        }
+
+        function handleCellClick(e) {
+            const index = e.target.dataset.index;
+            if (!gameActive) return;
+
+            if (selectedPiece) {
+                if (gameBoard[index] === '') {
+                    gameBoard[selectedPiece.dataset.index] = '';
+                    selectedPiece.textContent = '';
+                    gameBoard[index] = currentPlayer;
+                    e.target.textContent = currentPlayer;
+                    selectedPiece = null;
+                    checkWinner();
+                    if (gameActive) switchPlayer();
+                }
+            } else if (gameBoard[index] === '') {
+                gameBoard[index] = currentPlayer;
+                e.target.textContent = currentPlayer;
+                checkWinner();
+                if (gameActive) switchPlayer();
+            } else if (gameBoard[index] === currentPlayer) {
+                selectedPiece = e.target;
+            }
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === '😎' ? '🌺' : '😎';
+            message.textContent = `¡Turno del jugador ${currentPlayer}!`;
+        }
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+                    gameActive = false;
+                    message.textContent = winMessages[Math.floor(Math.random() * winMessages.length)];
+                    animateWinner(pattern);
+                    return;
+                }
+            }
+
+            if (!gameBoard.includes('')) {
+                gameActive = false;
+                message.textContent = drawMessages[Math.floor(Math.random() * drawMessages.length)];
+                animateDraw();
+            }
+        }
+
+        function animateWinner(pattern) {
+            pattern.forEach(index => {
+                document.querySelector(`.cell[data-index="${index}"]`).classList.add('winner-cell');
+            });
+        }
+
+        function animateDraw() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.add('draw-cell');
+            });
+        }
+
+        function resetGame() {
+            gameBoard = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            currentPlayer = '😎';
+            selectedPiece = null;
+            message.textContent = `¡Turno del jugador ${currentPlayer}!`;
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('winner-cell', 'draw-cell');
+            });
+        }
+
+        createBoard();
+        resetBtn.addEventListener('click', resetGame);
+        message.textContent = `¡Turno del jugador ${currentPlayer}!`;
+    </script>
+</body>
+</html>
